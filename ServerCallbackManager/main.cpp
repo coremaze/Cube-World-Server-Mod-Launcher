@@ -41,8 +41,7 @@ void no_shenanigans ASMHandlePacket(){
     asm("je 0f"); //The packet was not handled externally.
 
     asm("popad"); //The packet WAS handled externally.
-    asm("mov bl, 1");
-    asm("mov [ebp-0x13A5], bl");
+    asm("mov bl, [ebp-0x13A5]");
     asm("jmp [_ASMHandlePacket_Already_Handled_JMP]");
 
 
