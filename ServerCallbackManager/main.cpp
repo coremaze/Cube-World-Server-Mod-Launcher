@@ -56,6 +56,35 @@ void no_shenanigans ASMHandlePacket(){
     asm("jmp [_ASMHandlePacket_Invalid_Packet_JMP]");
 }
 
+
+
+MakeCallback(ReadyToSendCallback, void, RegisterReadyToSendCallback, ready_to_send_callbacks);
+void __stdcall no_shenanigans HandleReadyToSend(SOCKET s){
+    for (ReadyToSendCallback func : ready_to_send_callbacks){
+       func(s);
+    }
+}
+DWORD HandleReadyToSend_ptr = (DWORD)&HandleReadyToSend;
+
+unsigned int ASMHandleReadyToSend_JMP_Back;
+void no_shenanigans ASMHandleReadyToSend(){
+    asm("pushad");
+
+    asm("mov eax, [eax]");
+    asm("push dword ptr [eax+0x8]"); //socket
+    asm("call [_HandleReadyToSend_ptr]");
+
+    asm("popad");
+
+    asm("lea ecx, [ebp-0xD4]"); //original code
+
+    asm("jmp [_ASMHandleReadyToSend_JMP_Back]");
+
+
+}
+
+
+
 void WriteJMP(BYTE* location, BYTE* newFunction){
     DWORD dwOldProtection;
     VirtualProtect(location, 5, PAGE_EXECUTE_READWRITE, &dwOldProtection);
@@ -74,6 +103,10 @@ extern "C" __declspec(dllexport) bool APIENTRY DllMain(HINSTANCE hinstDLL, DWORD
             ASMHandlePacket_Valid_Packet_JMP = base + 0x260D8;
             ASMHandlePacket_Already_Handled_JMP = base + 0x266E3;
             WriteJMP((BYTE*)base + 0x260C9, (BYTE*)&ASMHandlePacket);
+
+
+            ASMHandleReadyToSend_JMP_Back = base + 0x23E9B;
+            WriteJMP((BYTE*)base + 0x23E95, (BYTE*)&ASMHandleReadyToSend);
             break;
     }
     return true;
