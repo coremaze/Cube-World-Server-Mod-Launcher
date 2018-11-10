@@ -70,7 +70,7 @@ unsigned int ASMHandleReadyToSend_JMP_Back;
 void no_shenanigans ASMHandleReadyToSend(){
     asm("pushad");
 
-    asm("mov eax, [eax]");
+    asm("mov eax, [eax + ecx * 4]");
     asm("push dword ptr [eax+0x8]"); //socket
     asm("call [_HandleReadyToSend_ptr]");
 
@@ -79,6 +79,34 @@ void no_shenanigans ASMHandleReadyToSend(){
     asm("lea ecx, [ebp-0xD4]"); //original code
 
     asm("jmp [_ASMHandleReadyToSend_JMP_Back]");
+
+
+}
+
+MakeCallback(WorldCreatedCallback, void, RegisterWorldCreatedCallback, world_created_callbacks);
+void __stdcall no_shenanigans HandleWorldCreated(unsigned int world_ptr){
+    for (WorldCreatedCallback func : world_created_callbacks){
+       func(world_ptr);
+    }
+}
+DWORD HandleWorldCreated_ptr = (DWORD)&HandleWorldCreated;
+
+unsigned int ASMHandleWorldCreated_JMP_Back;
+void no_shenanigans ASMHandleWorldCreated(){
+    asm("pushad");
+
+    asm("push eax"); //world ptr
+    asm("call [_HandleWorldCreated_ptr]");
+
+    asm("popad");
+
+    asm("pop ecx"); //original code
+    asm("pop edi");
+    asm("pop esi");
+    asm("pop ebx");
+    asm("mov ecx, [ebp-0x10]");
+
+    asm("jmp [_ASMHandleWorldCreated_JMP_Back]");
 
 
 }
@@ -107,6 +135,9 @@ extern "C" __declspec(dllexport) bool APIENTRY DllMain(HINSTANCE hinstDLL, DWORD
 
             ASMHandleReadyToSend_JMP_Back = base + 0x23E9B;
             WriteJMP((BYTE*)base + 0x23E95, (BYTE*)&ASMHandleReadyToSend);
+
+            ASMHandleWorldCreated_JMP_Back = base + 0x0CD84E;
+            WriteJMP((BYTE*)(base + 0xCD847), (BYTE*)&ASMHandleWorldCreated);
             break;
     }
     return true;
