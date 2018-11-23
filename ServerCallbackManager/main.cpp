@@ -140,6 +140,37 @@ void no_shenanigans ASMHandlePlayerDisconnect(){
 }
 
 
+MakeCallback(PlayerConnectCallback, void, RegisterPlayerConnectCallback, player_connect_callbacks);
+void __stdcall no_shenanigans HandlePlayerConnect(SOCKET socket){
+    for (PlayerConnectCallback func : player_connect_callbacks){
+       func(socket);
+    }
+}
+DWORD HandlePlayerConnect_ptr = (DWORD)&HandlePlayerConnect;
+
+unsigned int ASMHandlePlayerConnect_JMP_Back;
+void no_shenanigans ASMHandlePlayerConnect(){
+    asm("pushad");
+
+    asm("mov edx, [edi+4]");
+    asm("mov ecx, [edi+8]");
+    asm("mov eax, [edx]");
+
+
+    asm("mov eax, [eax + ecx * 4]");
+    asm("push dword ptr [eax+0x8]"); //socket
+
+    asm("call [_HandlePlayerConnect_ptr]");
+
+    asm("popad");
+
+    asm("mov [ebp-0x13A5], bl"); //original code
+
+    asm("jmp [_ASMHandlePlayerConnect_JMP_Back]");
+
+
+}
+
 
 void WriteJMP(BYTE* location, BYTE* newFunction){
     DWORD dwOldProtection;
@@ -169,6 +200,9 @@ extern "C" __declspec(dllexport) bool APIENTRY DllMain(HINSTANCE hinstDLL, DWORD
 
             ASMHandlePlayerDisconnect_JMP_Back = base + 0x25406;
             WriteJMP((BYTE*)(base + 0x25401), (BYTE*)&ASMHandlePlayerDisconnect);
+
+            ASMHandlePlayerConnect_JMP_Back = base + 0x2605F;
+            WriteJMP((BYTE*)(base + 0x26059), (BYTE*)&ASMHandlePlayerConnect);
             break;
     }
     return true;
