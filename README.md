@@ -1,6 +1,6 @@
 # Cube-World-Server-Mod-Launcher
 
-Supports injecting Cube World mods. DLLs must go in a folder called "Server_Mods".
+Supports injecting Cube World Sever mods. DLLs must go in a folder called "Server_Mods".
 
 If something doesn't work, make sure you have the latest release for the launcher and all your mods, along with Cube World.
 
